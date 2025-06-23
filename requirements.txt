@@ -108,7 +108,7 @@ python-dateutil
 python-decouple
 python-dotenv
 pytz
-pywin32
+# pywin32
 PyYAML
 pyzmq
 referencing
