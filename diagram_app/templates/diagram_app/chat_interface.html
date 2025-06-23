@@ -1,0 +1,1368 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='52' font-size='52'>🤖</text></svg>">
+
+    <title>AI Flowchart Chat</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    {% block extra_css %}
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a0d2e 0%, #2d1b4e 25%, #4a2c6b 50%, #6b3d8a 75%, #8e4ec6 100%);
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(138, 78, 198, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(107, 61, 138, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(45, 27, 78, 0.3) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 300px;
+            background: rgba(26, 13, 46, 0.9);
+            border-right: 1px solid rgba(168, 85, 247, 0.2);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(20px);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 50%, #e879f9 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 1rem;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .new-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(168, 85, 247, 0.4);
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            padding: 0 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .chat-item:hover {
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        .chat-item.active {
+            background: rgba(168, 85, 247, 0.15);
+            border-left-color: #a855f7;
+        }
+
+        .chat-item-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .chat-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-item-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .chat-item-time {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .chat-item-actions {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .chat-item:hover .chat-item-actions {
+            opacity: 1;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(26, 13, 46, 0.6);
+            backdrop-filter: blur(20px);
+        }
+
+        .chat-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 50%, #e879f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(168, 85, 247, 0.3);
+        }
+
+        /* Chat Messages Area */
+        .chat-messages-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        /* Message Styles */
+        .message {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            max-width: 100%;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #c084fc 0%, #e879f9 100%);
+        }
+
+        .message-content {
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message.user .message-content {
+            background: rgba(168, 85, 247, 0.15);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .message.assistant .message-content {
+            background: rgba(192, 132, 252, 0.1);
+            border-color: rgba(192, 132, 252, 0.2);
+        }
+
+        /* Mermaid Diagram Styles */
+        .mermaid-container {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .mermaid {
+            text-align: center;
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(168, 85, 247, 0.2);
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+            background: rgba(26, 13, 46, 0.6);
+            backdrop-filter: blur(20px);
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            color: #fff;
+            resize: none;
+            min-height: 50px;
+            max-height: 120px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #a855f7;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15);
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 50%, #e879f9 100%);
+            border: none;
+            border-radius: 12px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a855f7;
+            animation: loadingDot 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes loadingDot {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .welcome-icon {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 50%, #e879f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        /* Fullscreen Modal */
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+
+        .fullscreen-modal.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fullscreen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: rgba(26, 13, 46, 0.9);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .fullscreen-title {
+            color: #a855f7;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .fullscreen-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .fullscreen-btn {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            border-color: #a855f7;
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-right: 1rem;
+        }
+
+        .zoom-btn {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            border-color: #a855f7;
+        }
+
+        .zoom-level {
+            color: #fff;
+            font-size: 0.9rem;
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .fullscreen-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .fullscreen-diagram-container {
+            transform-origin: center center;
+            transition: transform 0.3s ease;
+            cursor: grab;
+            max-width: 100%;
+            max-height: 100%;
+            overflow: visible;
+        }
+
+        .fullscreen-diagram-container:active {
+            cursor: grabbing;
+        }
+
+        .fullscreen-diagram-container svg {
+            max-width: none !important;
+            max-height: none !important;
+        }
+
+        /* Close button */
+        .close-fullscreen {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .close-fullscreen:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: #ef4444;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+
+        .header-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            border-color: #a855f7;
+            transform: translateY(-1px);
+        }
+
+        .header-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Mermaid diagram action buttons */
+        .diagram-actions {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mermaid-container:hover .diagram-actions {
+            opacity: 1;
+        }
+
+        .diagram-action-btn {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .diagram-action-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            border-color: #a855f7;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+
+            .message-content {
+                max-width: 90%;
+            }
+
+            .header-controls {
+                display: none;
+            }
+        }
+
+        /* Scrollbar Styles */
+        .sidebar-content::-webkit-scrollbar,
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track,
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb,
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.4);
+            border-radius: 3px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover,
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.6);
+        }
+
+        /* Error Message */
+        .error-message {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem;
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+    {% endblock %}
+</head>
+
+<body>
+    {% block content %}
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="{% url 'diagram_app:new_session_view' %}" class="new-chat-btn">
+                    <i class="fas fa-plus"></i>
+                    New Chat
+                </a>
+            </div>
+
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <div class="section-title">Recent Chats</div>
+                    {% for session in chat_sessions %}
+                    <div class="chat-item {% if session.session_id == current_session.session_id %}active{% endif %}"
+                        onclick="navigateToSession('{{ session.session_id }}')">
+                        <div class="chat-item-icon">
+                            <i class="fas fa-comment"></i>
+                        </div>
+                        <div class="chat-item-content">
+                            <div class="chat-item-title">
+                                {{ session.title|default:"New Chat" }}
+                            </div>
+                            <div class="chat-item-time">
+                                {{ session.updated_at|timesince }} ago
+                            </div>
+                        </div>
+                        <div class="chat-item-actions">
+                            <button class="delete-btn" onclick="deleteSession(event, '{{ session.session_id }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="padding: 1rem; text-align: center; color: rgba(255, 255, 255, 0.5);">
+                        No chat history yet
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="chat-header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="chat-title">
+                    <i class="fas fa-project-diagram"></i>
+                    floww.ai
+                </div>
+                <div class="header-controls">
+                    <button class="header-btn" onclick="enterFullscreenMode()" title="Enter Fullscreen Mode">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages-area">
+                <div class="chat-messages" id="chatMessages">
+                    {% for message in chat_history %}
+                    <div class="message {{ message.message_type }}">
+                        <div class="message-avatar">
+                            {% if message.message_type == 'user' %}
+                            <i class="fas fa-user"></i>
+                            {% else %}
+                            <i class="fas fa-robot"></i>
+                            {% endif %}
+                        </div>
+                        <div class="message-content">
+                            {{ message.content|linebreaks }}
+                            {% if message.mermaid_code %}
+                            <div class="mermaid-container">
+                                <div class="diagram-actions">
+                                    <button class="diagram-action-btn" onclick="openFullscreen(this)">
+                                        <i class="fas fa-expand"></i> Fullscreen
+                                    </button>
+                                    <button class="diagram-action-btn" onclick="downloadDiagram(this, 'png')">
+                                        <i class="fas fa-download"></i> PNG
+                                    </button>
+                                    <button class="diagram-action-btn" onclick="downloadDiagram(this, 'jpeg')">
+                                        <i class="fas fa-download"></i> JPEG
+                                    </button>
+                                </div>
+                                <div class="mermaid">{{ message.mermaid_code }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="welcome-screen">
+                        <div class="welcome-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <h3 class="welcome-title">Welcome to AI Flowchart Generator!</h3>
+                        <p class="welcome-subtitle">Start a conversation to create beautiful diagrams and flowcharts
+                            instantly with the power of AI.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <textarea id="messageInput" class="chat-input" placeholder="Describe your flowchart or diagram..."
+                    rows="1"></textarea>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Fullscreen Modal -->
+        <div class="fullscreen-modal" id="fullscreenModal">
+            <div class="fullscreen-header">
+                <div class="fullscreen-title">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                    Fullscreen View
+                </div>
+                <div class="fullscreen-controls">
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomDiagram(-0.1)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <div class="zoom-level" id="zoomLevel">100%</div>
+                        <button class="zoom-btn" onclick="zoomDiagram(0.1)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="resetZoom()">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <button class="fullscreen-btn" onclick="downloadFullscreenDiagram('png')">
+                        <i class="fas fa-download"></i> PNG
+                    </button>
+                    <button class="fullscreen-btn" onclick="downloadFullscreenDiagram('jpeg')">
+                        <i class="fas fa-download"></i> JPEG
+                    </button>
+                    <button class="fullscreen-btn close-fullscreen" onclick="closeFullscreen()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+            <div class="fullscreen-content">
+                <div class="fullscreen-diagram-container" id="fullscreenDiagramContainer">
+                    <!-- Diagram will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block extra_js %}
+    <script>
+        let currentZoom = 1;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let currentTranslate = { x: 0, y: 0 };
+
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#a855f7',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#c084fc',
+                lineColor: '#a855f7',
+                secondaryColor: '#c084fc',
+                tertiaryColor: '#1a0d2e'
+            }
+        });
+
+        // Global variables
+        const currentSessionId = '{{ session_id }}';
+        let isLoading = false;
+
+        // Auto-resize textarea
+        const messageInput = document.getElementById('messageInput');
+        messageInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Send message on Enter (but not Shift+Enter)
+        messageInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Sidebar functions
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function navigateToSession(sessionId) {
+            if (sessionId !== currentSessionId) {
+                window.location.href = `{% url 'diagram_app:chat_interface_with_session' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', sessionId);
+            }
+        }
+
+        function deleteSession(event, sessionId) {
+            event.stopPropagation();
+            if (confirm('Delete this chat session? This action cannot be undone.')) {
+                fetch(`{% url 'diagram_app:delete_session' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', sessionId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (sessionId === currentSessionId) {
+                                window.location.href = '{% url "diagram_app:chat_interface" %}';
+                            } else {
+                                location.reload();
+                            }
+                        } else {
+                            alert('Failed to delete session');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to delete session');
+                    });
+            }
+        }
+
+        function openFullscreen(button) {
+            const mermaidContainer = button.closest('.mermaid-container');
+            const mermaidElement = mermaidContainer.querySelector('.mermaid');
+            const fullscreenModal = document.getElementById('fullscreenModal');
+            const fullscreenContainer = document.getElementById('fullscreenDiagramContainer');
+
+            const clonedDiagram = mermaidElement.cloneNode(true);
+            fullscreenContainer.innerHTML = '';
+            fullscreenContainer.appendChild(clonedDiagram);
+
+            fullscreenModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            resetZoom();
+            addDragFunctionality();
+        }
+
+        function closeFullscreen() {
+            const fullscreenModal = document.getElementById('fullscreenModal');
+            fullscreenModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+
+            currentZoom = 1;
+            currentTranslate = { x: 0, y: 0 };
+        }
+
+        function zoomDiagram(delta) {
+            currentZoom = Math.max(0.1, Math.min(3, currentZoom + delta));
+            updateDiagramTransform();
+            updateZoomLevel();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            currentTranslate = { x: 0, y: 0 };
+            updateDiagramTransform();
+            updateZoomLevel();
+        }
+
+        function updateDiagramTransform() {
+            const container = document.getElementById('fullscreenDiagramContainer');
+            container.style.transform = `translate(${currentTranslate.x}px, ${currentTranslate.y}px) scale(${currentZoom})`;
+        }
+
+        function updateZoomLevel() {
+            document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        function addDragFunctionality() {
+            const container = document.getElementById('fullscreenDiagramContainer');
+
+            container.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+
+            container.addEventListener('touchstart', startDragTouch);
+            document.addEventListener('touchmove', dragTouch);
+            document.addEventListener('touchend', endDrag);
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            dragStart.x = e.clientX - currentTranslate.x;
+            dragStart.y = e.clientY - currentTranslate.y;
+        }
+
+        function startDragTouch(e) {
+            isDragging = true;
+            const touch = e.touches[0];
+            dragStart.x = touch.clientX - currentTranslate.x;
+            dragStart.y = touch.clientY - currentTranslate.y;
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            currentTranslate.x = e.clientX - dragStart.x;
+            currentTranslate.y = e.clientY - dragStart.y;
+            updateDiagramTransform();
+        }
+
+        function dragTouch(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            currentTranslate.x = touch.clientX - dragStart.x;
+            currentTranslate.y = touch.clientY - dragStart.y;
+            updateDiagramTransform();
+        }
+
+        function endDrag() {
+            isDragging = false;
+        }
+
+        function downloadFullscreenDiagram(format) {
+            const container = document.getElementById('fullscreenDiagramContainer');
+            if (!container) {
+                alert('No diagram found.');
+                return;
+            }
+            const svgElem = container.querySelector('svg');
+            if (!svgElem) {
+                alert('No SVG diagram found.');
+                return;
+            }
+
+            const svgClone = svgElem.cloneNode(true);
+
+            function inlineStyles(element) {
+                const computed = window.getComputedStyle(element);
+                element.setAttribute('font-family', computed.fontFamily);
+                element.setAttribute('font-size', computed.fontSize);
+                element.setAttribute('fill', computed.fill);
+                element.setAttribute('stroke', computed.stroke);
+                for (let child of element.children) {
+                    inlineStyles(child);
+                }
+            }
+            inlineStyles(svgClone);
+
+            const serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(svgClone);
+
+            if (!svgString.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+                svgString = svgString.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            }
+            if (!svgString.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)) {
+                svgString = svgString.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+            }
+
+            const img = new window.Image();
+            const svgData = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+
+                if (format === 'jpeg') {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                ctx.drawImage(img, 0, 0);
+
+                const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+                canvas.toBlob(function (blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'diagram.' + format;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, mimeType);
+            };
+
+            img.onerror = function () {
+                alert('Failed to export diagram.');
+            };
+
+            img.src = svgData;
+        }
+
+        function enterFullscreenMode() {
+            const chatMessages = document.getElementById('chatMessages');
+            const mermaidContainers = chatMessages.querySelectorAll('.mermaid-container');
+
+            if (mermaidContainers.length === 0) {
+                alert('No diagrams found to display in fullscreen');
+                return;
+            }
+
+            const lastMermaidContainer = mermaidContainers[mermaidContainers.length - 1];
+            const mermaidElement = lastMermaidContainer.querySelector('.mermaid');
+
+            if (!mermaidElement) {
+                alert('No diagram found to display in fullscreen');
+                return;
+            }
+
+            const fullscreenModal = document.getElementById('fullscreenModal');
+            const fullscreenContainer = document.getElementById('fullscreenDiagramContainer');
+
+            const clonedDiagram = mermaidElement.cloneNode(true);
+            fullscreenContainer.innerHTML = '';
+            fullscreenContainer.appendChild(clonedDiagram);
+
+            fullscreenModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            resetZoom();
+            addDragFunctionality();
+        }
+
+        // Keyboard shortcuts for fullscreen
+        document.addEventListener('keydown', function (e) {
+            if (document.getElementById('fullscreenModal').classList.contains('active')) {
+                switch (e.key) {
+                    case 'Escape':
+                        closeFullscreen();
+                        break;
+                    case '=':
+                    case '+':
+                        e.preventDefault();
+                        zoomDiagram(0.1);
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        zoomDiagram(-0.1);
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        resetZoom();
+                        break;
+                }
+            }
+        });
+
+        // Mouse wheel zoom
+        document.getElementById('fullscreenDiagramContainer').addEventListener('wheel', function (e) {
+            if (document.getElementById('fullscreenModal').classList.contains('active')) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                zoomDiagram(delta);
+            }
+        });
+
+        // Chat functions
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isLoading) return;
+
+            isLoading = true;
+            updateSendButton(true);
+
+            addMessage('user', message);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            const loadingId = addLoadingMessage();
+
+            fetch('{% url "diagram_app:send_message" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: currentSessionId
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    removeLoadingMessage(loadingId);
+
+                    if (data.success) {
+                        addMessage('assistant', data.response, data.mermaid_code);
+                    } else {
+                        addErrorMessage(data.error || 'Failed to send message');
+                    }
+                })
+                .catch(error => {
+                    removeLoadingMessage(loadingId);
+                    addErrorMessage('Network error. Please try again.');
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    isLoading = false;
+                    updateSendButton(false);
+                });
+        }
+
+        function addMessage(type, content, mermaidCode = null) {
+            const chatMessages = document.getElementById('chatMessages');
+
+            const welcomeScreen = chatMessages.querySelector('.welcome-screen');
+            if (welcomeScreen) {
+                welcomeScreen.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = type === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = content.replace(/\n/g, '<br>');
+
+            if (mermaidCode) {
+                const mermaidContainer = document.createElement('div');
+                mermaidContainer.className = 'mermaid-container';
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'diagram-actions';
+                actionsDiv.innerHTML = `
+                    <button class="diagram-action-btn" onclick="openFullscreen(this)">
+                        <i class="fas fa-expand"></i> Fullscreen
+                    </button>
+                    <button class="diagram-action-btn" onclick="downloadDiagram(this, 'png')">
+                        <i class="fas fa-download"></i> PNG
+                    </button>
+                    <button class="diagram-action-btn" onclick="downloadDiagram(this, 'jpeg')">
+                        <i class="fas fa-download"></i> JPEG
+                    </button>
+                `;
+
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.className = 'mermaid';
+                mermaidDiv.textContent = mermaidCode;
+
+                mermaidContainer.appendChild(actionsDiv);
+                mermaidContainer.appendChild(mermaidDiv);
+                messageContent.appendChild(mermaidContainer);
+
+                mermaid.init(undefined, mermaidDiv);
+            }
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            const chatMessages = document.getElementById('chatMessages');
+            const loadingId = 'loading-' + Date.now();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = loadingId;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = '<i class="fas fa-robot"></i>';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content loading';
+            messageContent.innerHTML = `
+                <span>Thinking</span>
+                <div class="loading-dots">
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                </div>
+            `;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return loadingId;
+        }
+
+        function removeLoadingMessage(loadingId) {
+            const loadingMessage = document.getElementById(loadingId);
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        function addErrorMessage(error) {
+            const chatMessages = document.getElementById('chatMessages');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = error;
+            chatMessages.appendChild(errorDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function updateSendButton(loading) {
+            const sendButton = document.getElementById('sendButton');
+            sendButton.disabled = loading;
+            sendButton.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i>' : '<i class="fas fa-paper-plane"></i>';
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function (event) {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.querySelector('.sidebar-toggle');
+
+            if (window.innerWidth <= 768 &&
+                sidebar.classList.contains('open') &&
+                !sidebar.contains(event.target) &&
+                !sidebarToggle.contains(event.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // Initialize mermaid diagrams on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            mermaid.init();
+        });
+    </script>
+    {% endblock %}
+</body>
+
+</html>

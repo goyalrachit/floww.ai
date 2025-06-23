@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mermaid Editor - Grok Style</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e1e5e9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Shooting Stars Animation */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #ffffff;
+            border-radius: 50%;
+            animation: shoot linear infinite;
+        }
+
+        .star::before {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+            transform: translateX(-50px);
+            top: 50%;
+            left: 50%;
+            transform-origin: 0 50%;
+        }
+
+        @keyframes shoot {
+            0% {
+                transform: translateX(-100px) translateY(-100px);
+                opacity: 1;
+            }
+            70% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(100vw) translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        .star:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-duration: 3s;
+            animation-delay: 0s;
+        }
+
+        .star:nth-child(2) {
+            top: 20%;
+            left: 20%;
+            animation-duration: 4s;
+            animation-delay: 1s;
+        }
+
+        .star:nth-child(3) {
+            top: 5%;
+            left: 50%;
+            animation-duration: 3.5s;
+            animation-delay: 2s;
+        }
+
+        .star:nth-child(4) {
+            top: 30%;
+            left: 80%;
+            animation-duration: 5s;
+            animation-delay: 0.5s;
+        }
+
+        .star:nth-child(5) {
+            top: 60%;
+            left: 30%;
+            animation-duration: 2.8s;
+            animation-delay: 3s;
+        }
+
+        /* Main Container */
+        .container-fluid {
+            height: 100vh;
+            position: relative;
+            z-index: 2;
+        }
+
+        .editor-panel {
+            height: 100vh;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .preview-panel {
+            height: 100vh;
+            background: rgba(16, 33, 62, 0.6);
+            backdrop-filter: blur(20px);
+            overflow: auto;
+        }
+
+        .panel-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .panel-title i {
+            color: #00d4ff;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: rgba(0, 212, 255, 0.15);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: rgba(0, 212, 255, 0.25);
+            border-color: #00d4ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #ffffff;
+            border-color: #00d4ff;
+        }
+
+        .btn-success {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .btn-success:hover {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: #10b981;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-info {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.3);
+            color: #8b5cf6;
+        }
+
+        .btn-info:hover {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: #8b5cf6;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(107, 114, 128, 0.15);
+            border-color: rgba(107, 114, 128, 0.3);
+            color: #9ca3af;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(107, 114, 128, 0.25);
+            border-color: #9ca3af;
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+        }
+
+        .code-editor {
+            height: calc(100vh - 140px);
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: #e1e5e9;
+            font-family: 'Fira Code', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .code-editor:focus {
+            border-color: #00d4ff;
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+        }
+
+        .code-editor::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .diagram-container {
+            padding: 2rem;
+            min-height: calc(100vh - 140px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #diagramPreview {
+            width: 100%;
+            min-height: 400px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #diagramPreview svg {
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+        }
+
+        .preview-empty {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .preview-empty i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #00d4ff;
+            opacity: 0.7;
+        }
+
+        .alert {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 1rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.5);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container-fluid {
+                flex-direction: column;
+            }
+
+            .editor-panel,
+            .preview-panel {
+                height: 50vh;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .code-editor {
+                height: calc(50vh - 140px);
+            }
+
+            .diagram-container {
+                min-height: calc(50vh - 140px);
+            }
+
+            .toolbar {
+                justify-content: center;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #00d4ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Glow Effects */
+        .glow {
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .panel-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+        }
+    </style>
+</head>
+<body>
+    <!-- Shooting Stars -->
+    <div class="stars">
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+        <div class="star"></div>
+    </div>
+
+    <div class="container-fluid d-flex">
+        <!-- Code Editor Panel -->
+        <div class="editor-panel" style="flex: 1;">
+            <div class="panel-header position-relative">
+                <div class="panel-title">
+                    <i class="fas fa-code"></i>
+                    Mermaid Code Editor
+                </div>
+                <div class="toolbar">
+                    <button class="btn btn-primary" onclick="renderDiagram()">
+                        <i class="fas fa-play"></i>
+                        Render
+                    </button>
+                    <button class="btn btn-success" onclick="downloadPNG()">
+                        <i class="fas fa-download"></i>
+                        PNG
+                    </button>
+                    <button class="btn btn-info" onclick="downloadSVG()">
+                        <i class="fas fa-file-code"></i>
+                        SVG
+                    </button>
+                    <button class="btn btn-secondary" onclick="copyCode()">
+                        <i class="fas fa-copy"></i>
+                        Copy
+                    </button>
+                </div>
+            </div>
+            <div style="padding: 1.5rem;">
+                <textarea id="codeEditor" class="code-editor" placeholder="Enter your Mermaid code here...
+
+Example:
+flowchart TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Process]
+    B -->|No| D[End]
+    C --> D"></textarea>
+            </div>
+        </div>
+        
+        <!-- Preview Panel -->
+        <div class="preview-panel" style="flex: 1;">
+            <div class="panel-header position-relative">
+                <div class="panel-title">
+                    <i class="fas fa-eye"></i>
+                    Live Preview
+                </div>
+            </div>
+            <div class="diagram-container">
+                <div id="diagramPreview">
+                    <div class="preview-empty">
+                        <i class="fas fa-magic"></i>
+                        <h3>Your diagram will appear here</h3>
+                        <p>Start typing Mermaid code to see the magic happen!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: 'dark',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#00d4ff',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#00d4ff',
+                lineColor: '#00d4ff',
+                secondaryColor: '#1a1a2e',
+                tertiaryColor: '#16213e',
+                background: '#0a0a0f',
+                mainBkg: '#1a1a2e',
+                secondBkg: '#16213e',
+                tertiaryBkg: '#0a0a0f'
+            }
+        });
+
+        // Load default code
+        document.getElementById('codeEditor').value = `flowchart TD
+    A[🚀 Start Your Journey] --> B{Make a Choice}
+    B -->|✅ Yes| C[🎯 Process Task]
+    B -->|❌ No| D[🏁 End Journey]
+    C --> E[🔄 Another Step]
+    E --> F{Continue?}
+    F -->|✅ Yes| C
+    F -->|❌ No| D
+    
+    style A fill:#00d4ff,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    style C fill:#10b981,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    style D fill:#ef4444,stroke:#ffffff,stroke-width:2px,color:#ffffff`;
+
+        renderDiagram();
+
+        async function renderDiagram() {
+            const code = document.getElementById('codeEditor').value;
+            const preview = document.getElementById('diagramPreview');
+            
+            if (!code.trim()) {
+                preview.innerHTML = `
+                    <div class="preview-empty">
+                        <i class="fas fa-magic"></i>
+                        <h3>Your diagram will appear here</h3>
+                        <p>Start typing Mermaid code to see the magic happen!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                preview.innerHTML = '<div class="loading"></div>';
+                const diagramId = 'diagram-' + Date.now();
+                const { svg } = await mermaid.render(diagramId, code);
+                preview.innerHTML = svg;
+                preview.classList.add('glow');
+                setTimeout(() => preview.classList.remove('glow'), 1000);
+            } catch (error) {
+                preview.innerHTML = `
+                    <div class="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Syntax Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function downloadPNG() {
+            const diagramElement = document.getElementById('diagramPreview');
+            const svg = diagramElement.querySelector('svg');
+            
+            if (!svg) {
+                alert('❌ No diagram to download');
+                return;
+            }
+            
+            try {
+                const canvas = await html2canvas(diagramElement, { 
+                    backgroundColor: '#0a0a0f',
+                    scale: 2
+                });
+                const link = document.createElement('a');
+                link.download = `mermaid-diagram-${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                // Success feedback
+                const btn = event.target.closest('.btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            } catch (error) {
+                alert('❌ Error generating PNG: ' + error.message);
+            }
+        }
+
+        function downloadSVG() {
+            const svg = document.querySelector('#diagramPreview svg');
+            if (!svg) {
+                alert('❌ No diagram to download');
+                return;
+            }
+            
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgData], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.download = `mermaid-diagram-${new Date().getTime()}.svg`;
+            link.href = url;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            // Success feedback
+            const btn = event.target.closest('.btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
+            setTimeout(() => btn.innerHTML = originalText, 2000);
+        }
+
+        function copyCode() {
+            const code = document.getElementById('codeEditor').value;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target.closest('.btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            }).catch(() => {
+                alert('❌ Failed to copy code');
+            });
+        }
+
+        // Auto-render with debounce
+        let renderTimeout;
+        document.getElementById('codeEditor').addEventListener('input', function() {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(renderDiagram, 800);
+        });
+
+        // Enhanced keyboard shortcuts
+        document.getElementById('codeEditor').addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        renderDiagram();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        downloadSVG();
+                        break;
+                }
+            }
+        });
+
+        // Add more shooting stars dynamically
+        function createShootingStar() {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.top = Math.random() * 50 + '%';
+            star.style.left = Math.random() * 50 + '%';
+            star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            star.style.animationDelay = Math.random() * 2 + 's';
+            
+            document.querySelector('.stars').appendChild(star);
+            
+            setTimeout(() => {
+                star.remove();
+            }, 8000);
+        }
+
+        // Create new shooting stars periodically
+        setInterval(createShootingStar, 3000);
+    </script>
+</body>
+</html>

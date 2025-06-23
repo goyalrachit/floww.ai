@@ -1,0 +1,536 @@
+{% extends 'diagram_app/base.html' %}
+
+{% block title %}AI Mermaid Generator - Home{% endblock %}
+
+{% block extra_css %}
+<style>
+    .home-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        min-height: calc(100vh - 120px);
+    }
+
+    .input-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .hero-section {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.2rem;
+        color: #888;
+        margin-bottom: 2rem;
+    }
+
+    .main-card {
+        background: rgba(20, 20, 20, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid #333;
+        border-radius: 16px;
+        overflow: hidden;
+        height: fit-content;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #e1e5e9;
+    }
+
+    .form-textarea {
+        background: rgba(50, 50, 50, 0.8);
+        border: 1px solid #555;
+        border-radius: 12px;
+        padding: 1rem;
+        color: #e1e5e9;
+        transition: all 0.3s ease;
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .form-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-textarea::placeholder {
+        color: #888;
+    }
+
+    .generate-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .generate-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+    }
+
+    .generate-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .code-section {
+        background: rgba(30, 30, 30, 0.8);
+        border: 1px solid #444;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .code-title {
+        font-weight: 600;
+        color: #e1e5e9;
+    }
+
+    .copy-btn {
+        background: transparent;
+        border: 1px solid #555;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        color: #888;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .copy-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .preview-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .preview-card {
+        flex: 1;
+    }
+
+    .preview-container {
+        background: rgba(40, 40, 40, 0.6);
+        border: 1px solid #444;
+        border-radius: 12px;
+        padding: 2rem;
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #888;
+    }
+
+    .preview-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .preview-empty i {
+        font-size: 4rem;
+        color: #555;
+    }
+
+    .recent-section {
+        background: rgba(20, 20, 20, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid #333;
+        border-radius: 16px;
+        overflow: hidden;
+        height: fit-content;
+    }
+
+    .recent-item {
+        padding: 1rem;
+        border-bottom: 1px solid #333;
+        transition: all 0.3s ease;
+    }
+
+    .recent-item:last-child {
+        border-bottom: none;
+    }
+
+    .recent-item:hover {
+        background: rgba(40, 40, 40, 0.6);
+    }
+
+    .recent-time {
+        font-size: 0.8rem;
+        color: #888;
+        margin-bottom: 0.5rem;
+    }
+
+    .recent-link {
+        color: #e1e5e9;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+    .recent-link:hover {
+        color: #667eea;
+    }
+
+    .quick-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .action-card {
+        flex: 1;
+        background: rgba(30, 30, 30, 0.8);
+        border: 1px solid #444;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: #e1e5e9;
+    }
+
+    .action-card:hover {
+        background: rgba(40, 40, 40, 0.8);
+        border-color: #667eea;
+        transform: translateY(-2px);
+        color: #e1e5e9;
+    }
+
+    .action-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .action-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .action-desc {
+        font-size: 0.9rem;
+        color: #888;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .home-container {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .home-container {
+            padding: 1rem;
+        }
+        
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .quick-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="input-section">
+        <div class="hero-section">
+            <h1 class="hero-title">Create Beautiful Flowcharts</h1>
+            <p class="hero-subtitle">Describe your process and let AI generate professional diagrams</p>
+        </div>
+
+        <div class="main-card">
+            <div class="card-header">
+                <h2>Describe Your Flowchart</h2>
+            </div>
+            <div class="card-body">
+                <form id="diagramForm">
+                    <div class="form-group">
+                        <label for="promptInput" class="form-label">Enter your flowchart description:</label>
+                        <textarea 
+                            class="form-textarea" 
+                            id="promptInput" 
+                            placeholder="Example: A user registration process where users enter email and password, system validates the data, creates account if valid, or shows error if invalid..."
+                            required></textarea>
+                    </div>
+                    <button type="submit" class="generate-btn" id="generateBtn">
+                        <span id="btnText">
+                            <i class="fas fa-magic"></i>
+                            Generate Diagram
+                        </span>
+                        <div class="spinner d-none" id="btnSpinner"></div>
+                    </button>
+                </form>
+                
+                <div id="errorAlert" class="alert alert-danger d-none"></div>
+                
+                <div id="codeSection" class="code-section d-none">
+                    <div class="code-header">
+                        <h3 class="code-title">Generated Mermaid Code</h3>
+                        <button class="copy-btn" onclick="copyCode()">
+                            <i class="fas fa-copy"></i>
+                            Copy Code
+                        </button>
+                    </div>
+                    <div id="mermaidCode" class="code-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <a href="{% url 'diagram_app:chat_interface' %}" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="action-title">AI Chat</div>
+                <div class="action-desc">Interactive chat interface</div>
+            </a>
+            <a href="{% url 'diagram_app:simple_editor' %}" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-code"></i>
+                </div>
+                <div class="action-title">Code Editor</div>
+                <div class="action-desc">Edit mermaid code directly</div>
+            </a>
+        </div>
+        
+        {% if recent_diagrams %}
+        <div class="recent-section">
+            <div class="card-header">
+                <h3>Recent Diagrams</h3>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                {% for diagram in recent_diagrams %}
+                <div class="recent-item">
+                    <div class="recent-time">{{ diagram.created_at|date:"M d, Y H:i" }}</div>
+                    <a href="{% url 'diagram_app:diagram_detail' diagram.id %}" class="recent-link">
+                        {{ diagram.user_prompt|truncatechars:60 }}
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="preview-section">
+        <div class="preview-card main-card">
+            <div class="card-header">
+                <h2>Diagram Preview</h2>
+            </div>
+            <div class="card-body">
+                <div id="diagramPreview" class="preview-container">
+                    <div class="preview-empty">
+                        <i class="fas fa-project-diagram"></i>
+                        <div>
+                            <h3>Your diagram will appear here</h3>
+                            <p>Enter a description and generate to see the magic!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('diagramForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const prompt = document.getElementById('promptInput').value.trim();
+    const generateBtn = document.getElementById('generateBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const errorAlert = document.getElementById('errorAlert');
+    const codeSection = document.getElementById('codeSection');
+    const mermaidCode = document.getElementById('mermaidCode');
+    const diagramPreview = document.getElementById('diagramPreview');
+    
+    if (!prompt) {
+        showError('Please enter a description for your flowchart.');
+        return;
+    }
+    
+    // Show loading state
+    generateBtn.disabled = true;
+    btnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    btnSpinner.classList.remove('d-none');
+    errorAlert.classList.add('d-none');
+    
+    try {
+        const response = await fetch('{% url "diagram_app:generate_diagram" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ prompt: prompt })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Display the generated code
+            mermaidCode.textContent = data.mermaid_code;
+            codeSection.classList.remove('d-none');
+            
+            // Render the diagram
+            await renderDiagram(data.mermaid_code);
+            
+        } else {
+            showError(data.error || 'Failed to generate diagram');
+        }
+        
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        // Reset button state
+        generateBtn.disabled = false;
+        btnText.innerHTML = '<i class="fas fa-magic"></i> Generate Diagram';
+        btnSpinner.classList.add('d-none');
+    }
+});
+
+async function renderDiagram(mermaidCode) {
+    const diagramPreview = document.getElementById('diagramPreview');
+    
+    try {
+        // Clear previous content
+        diagramPreview.innerHTML = '';
+        
+        // Create a unique ID for this diagram
+        const diagramId = 'diagram-' + Date.now();
+        
+        // Render the diagram
+        const { svg } = await mermaid.render(diagramId, mermaidCode);
+        diagramPreview.innerHTML = svg;
+        
+        // Style the SVG for dark theme
+        const svgElement = diagramPreview.querySelector('svg');
+        if (svgElement) {
+            svgElement.style.backgroundColor = 'transparent';
+            svgElement.style.maxWidth = '100%';
+            svgElement.style.height = 'auto';
+        }
+        
+    } catch (error) {
+        diagramPreview.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Diagram Rendering Error:</strong><br>
+                ${error.message}
+            </div>
+        `;
+    }
+}
+
+function showError(message) {
+    const errorAlert = document.getElementById('errorAlert');
+    errorAlert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    errorAlert.classList.remove('d-none');
+}
+
+function copyCode() {
+    const code = document.getElementById('mermaidCode').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        // Visual feedback
+        const copyBtn = event.target.closest('.copy-btn');
+        const originalHTML = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        copyBtn.style.color = '#10b981';
+        copyBtn.style.borderColor = '#10b981';
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalHTML;
+            copyBtn.style.color = '';
+            copyBtn.style.borderColor = '';
+        }, 2000);
+    }).catch(() => {
+        alert('Failed to copy code to clipboard');
+    });
+}
+
+// Auto-resize textarea
+document.getElementById('promptInput').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+});
+</script>
+{% endblock %}
